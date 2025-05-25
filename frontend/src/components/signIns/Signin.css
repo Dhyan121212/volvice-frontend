@@ -1,0 +1,76 @@
+/* SignIn.css */
+
+body {
+  background-color: #09224d;
+  font-family: 'Arial', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.signin-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f0f2;
+  padding: 20px;
+}
+
+.signin-wrapper {
+  max-width: 400px;
+  width: 100%;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.signin-card {
+  border-radius: 10px;
+}
+
+.signin-form .ant-form-item-label {
+  font-weight: 600;
+}
+
+.signin-form .ant-input {
+  height: 40px;
+  padding: 0 15px;
+  font-size: 16px;
+}
+
+.signin-form .ant-input-password {
+  height: 40px;
+  padding: 0 15px;
+  font-size: 16px;
+}
+
+.signin-button .ant-btn {
+  height: 45px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ant-card-body {
+  padding: 24px;
+}
+
+.ant-card-title {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: #1890ff;
+}
+
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #3c4348;
+  border-color: #40a9ff;
+}

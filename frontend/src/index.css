@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Custom styling for AntD Calendar */
+.custom-calendar .ant-picker-calendar {
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+.custom-calendar .ant-picker-calendar-date {
+  padding: 8px;
+  transition: all 0.2s ease-in-out;
+  border-radius: 8px;
+}
+
+.custom-calendar .ant-picker-calendar-date:hover {
+  background-color: #f0f5ff;
+  cursor: pointer;
+}
+
+.custom-calendar .ant-picker-calendar-date-content {
+  padding-left: 0.3rem;
+}
+
+.custom-calendar .ant-picker-cell-selected .ant-picker-calendar-date,
+.custom-calendar .ant-picker-cell-selected .ant-picker-calendar-date-today {
+  background-color: #bae6fd !important;
+  border: 1px solid #0284c7;
+  color: #0c4a6e;
+}
+
+.custom-calendar .ant-picker-calendar-date-today {
+  border: 1px dashed #0ea5e9;
+}
+
+.custom-calendar .events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.custom-calendar .events li {
+  font-size: 12px;
+  color: #ef4444;
+}

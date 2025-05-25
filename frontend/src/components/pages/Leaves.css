@@ -1,0 +1,38 @@
+.custom-calendar .ant-picker-panel {
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+.custom-calendar .ant-picker-calendar-date {
+  padding: 8px;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.custom-calendar .ant-picker-calendar-date:hover {
+  background-color: #e0f2fe;
+  cursor: pointer;
+}
+
+.custom-calendar .ant-picker-cell-selected .ant-picker-calendar-date {
+  background-color: #bae6fd !important;
+  border: 1px solid #0284c7;
+  color: #0c4a6e;
+}
+
+.custom-calendar .ant-picker-calendar-date-today {
+  border: 1px dashed #0ea5e9;
+}
+
+.events {
+  margin-top: 4px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.events li {
+  font-size: 13px;
+  color: #ef4444;
+  font-weight: 500;
+}
