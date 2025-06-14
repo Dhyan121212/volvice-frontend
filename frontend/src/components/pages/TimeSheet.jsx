@@ -1,133 +1,158 @@
-import React, { useState } from 'react';
-import { Card, Input, Button, Select, DatePicker, message } from 'antd';
-import { CalendarOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import React, { useState, useEffect } from "react";
+import { Table, Input, Button, DatePicker, Card, message } from "antd";
+import axios from "axios";
+import moment from "moment";
 
-const { Option } = Select;
-const { RangePicker } = DatePicker;
+const Timesheet = () => {
+  const [form, setForm] = useState({
+    date: null,
+    project: "",
+    hoursWorked: "",
+    description: ""
+  });
 
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri','Sat', 'Sun'];
-const workTypes = ['Regular', 'Overtime', 'Leave', 'Holiday'];
+  const [timesheets, setTimesheets] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
 
-const TimeSheet = () => {
-  const [weekRange, setWeekRange] = useState([]);
-  const [entries, setEntries] = useState(
-    days.map(day => ({
-      day,
-      workType: 'Regular',
-      time: '',
-      comments: ''
-    }))
-  );
+  const token = localStorage.getItem("token");
+  const config = { headers: { Authorization: `Bearer ${token}` } };
 
-  const handleChange = (index, field, value) => {
-    const updated = [...entries];
-    updated[index][field] = value;
-    setEntries(updated);
+  const fetchTimesheets = async () => {
+    try {
+      const res = await axios.get("http://localhost:8081/api/v1/timesheets/me", config);
+      setTimesheets(res.data);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to fetch timesheets");
+    }
   };
 
-  const handleSubmit = () => {
-  if (!weekRange.length) {
-    message.warning('Please select a week range.');
-    return;
-  }
-
-  const submittedTimesheet = {
-    week: `${weekRange[0].format('D MMM YYYY')} - ${weekRange[1].format('D MMM YYYY')}`,
-    entries,
-    submittedAt: dayjs().format('YYYY-MM-DD HH:mm:ss')
+  const fetchWeeklyReport = async () => {
+    try {
+      const res = await axios.get("http://localhost:8081/api/v1/timesheets/weekly", config);
+      const formatted = Object.entries(res.data).map(([weekStart, totalHours]) => ({
+        weekStart,
+        weekEnd: moment(weekStart).add(6, "days").format("YYYY-MM-DD"),
+        totalHours
+      }));
+      setWeeklyData(formatted);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to fetch weekly summary");
+    }
   };
 
-  // Retrieve old timesheets from localStorage
-  const existing = JSON.parse(localStorage.getItem('timesheets') || '[]');
-  existing.push(submittedTimesheet);
-  localStorage.setItem('timesheets', JSON.stringify(existing));
+  const handleSubmit = async () => {
+    const { date, project, hoursWorked, description } = form;
+    if (!date || !project || !hoursWorked) return message.warning("Please fill all fields");
 
-  message.success('Timesheet submitted successfully!');
-};
+    try {
+      await axios.post(
+        "http://localhost:8081/api/v1/timesheets",
+        {
+          date: date.format("YYYY-MM-DD"),
+          project,
+          hoursWorked,
+          description
+        },
+        config
+      );
+      message.success("Timesheet submitted");
+      setForm({ date: null, project: "", hoursWorked: "", description: "" });
+      fetchTimesheets();
+      fetchWeeklyReport();
+    } catch (err) {
+      console.error(err);
+      message.error("Submission failed");
+    }
+  };
 
+  useEffect(() => {
+    fetchTimesheets();
+    fetchWeeklyReport();
+  }, []);
+
+  const dailyColumns = [
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      render: (text) => text ? moment(text).format("YYYY-MM-DD") : "-"
+    },
+    { title: "Project", dataIndex: "project", key: "project" },
+    { title: "Hours", dataIndex: "hoursWorked", key: "hoursWorked" },
+    { title: "Description", dataIndex: "description", key: "description" },
+    {
+      title: "Submitted At",
+      dataIndex: "submittedAt",
+      key: "submittedAt",
+      render: (text) => text ? moment(text).format("YYYY-MM-DD HH:mm") : "-"
+    },
+    {
+      title: "Week Start",
+      dataIndex: "date",
+      key: "weekStart",
+      render: (text) => text ? moment(text).startOf("isoWeek").format("YYYY-MM-DD") : "-"
+    }
+  ];
+
+  const weeklyColumns = [
+    { title: "Week Start", dataIndex: "weekStart", key: "weekStart" },
+    { title: "Week End", dataIndex: "weekEnd", key: "weekEnd" },
+    { title: "Total Hours", dataIndex: "totalHours", key: "totalHours" }
+  ];
 
   return (
-    <Card title="Time Sheet" style={{ maxWidth: 600, margin: '2rem auto' }}>
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span>Week:</span>
-
-
-
-
-     <RangePicker
-    value={weekRange}
-    onChange={(dates) => {
-        if (dates && dates.length === 2) {
-        const diff = dates[1].diff(dates[0], 'day');
-        if (diff !== 6) {
-            message.warning('Please select a full 7-day week (6 days difference).');
-            setWeekRange([]);
-            setWeek('');
-        } else {
-            setWeekRange(dates);
-            setWeek(`${dates[0].format('D MMM YYYY')} - ${dates[1].format('D MMM YYYY')}`);
-        }
-        } else {
-        setWeekRange([]);
-        setWeek('');
-        }
-    }}
-    style={{ flex: 1 }}
-/>
-
-
-      </div>
-
-      {entries.map((entry, index) => (
-        <div
-          key={entry.day}
-          style={{
-            display: 'flex',
-            gap: 8,
-            marginBottom: 12,
-            alignItems: 'center'
-          }}
-        >
-          <span style={{ width: 40 }}>{entry.day}</span>
-
-          <Select
-            value={entry.workType}
-            onChange={(value) => handleChange(index, 'workType', value)}
-            style={{ width: 120 }}
-          >
-            {workTypes.map((type) => (
-              <Option key={type} value={type}>
-                {type}
-              </Option>
-            ))}
-          </Select>
-
+    <div className="max-w-5xl mx-auto space-y-6 p-4">
+      <Card title="Log Timesheet Entry">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DatePicker
+            value={form.date}
+            onChange={(value) => setForm({ ...form, date: value })}
+            placeholder="Date"
+            style={{ width: "100%" }}
+          />
+          <Input
+            value={form.project}
+            onChange={(e) => setForm({ ...form, project: e.target.value })}
+            placeholder="Project"
+          />
           <Input
             type="number"
-            min="0"
-            max="24"
-            step="0.25"
-            placeholder="Hours"
-            value={entry.time}
-            onChange={(e) => handleChange(index, 'time', e.target.value)}
-            style={{ width: 120 }}
+            value={form.hoursWorked}
+            onChange={(e) => setForm({ ...form, hoursWorked: e.target.value })}
+            placeholder="Hours Worked"
           />
-
           <Input
-            placeholder="Comments"
-            value={entry.comments}
-            onChange={(e) => handleChange(index, 'comments', e.target.value)}
-            style={{ flex: 1 }}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Description"
           />
         </div>
-      ))}
+        <Button type="primary" className="mt-4" onClick={handleSubmit}>
+          Submit Timesheet
+        </Button>
+      </Card>
 
-      <Button type="primary" onClick={handleSubmit} block>
-        Submit Timesheet
-      </Button>
-    </Card>
+      <Card title="Daily Timesheet Entries">
+        <Table
+          dataSource={timesheets}
+          columns={dailyColumns}
+          rowKey={(record) => record.id || record.date + record.project}
+          pagination={{ pageSize: 5 }}
+        />
+      </Card>
+
+      <Card title="Weekly Timesheet Summary">
+        <Table
+          dataSource={weeklyData}
+          columns={weeklyColumns}
+          rowKey="weekStart"
+          pagination={false}
+        />
+      </Card>
+    </div>
   );
 };
 
-export default TimeSheet;
+export default Timesheet;

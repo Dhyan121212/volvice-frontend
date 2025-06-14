@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Select, Input, Button, Table, message, Tabs } from 'antd';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
+import { Card, Select, Input, Button, message } from 'antd';
 
 const { Option } = Select;
-const { TabPane } = Tabs;
 
 const workTypes = [
   'Work from Office',
@@ -13,27 +14,59 @@ const workTypes = [
 ];
 
 const Attendance = () => {
-  const [workType, setWorkType] = useState(workTypes[0]);
+  
+  const { empId } = useParams();
+  const storedEmployee = JSON.parse(localStorage.getItem("employee"));
 
-  // Check-in states
+  const employeeId = empId ? parseInt(empId, 10) : storedEmployee?.empId;
+  const employeeName = storedEmployee?.name || localStorage.getItem('empName') || 'Employee';
+  const token = localStorage.getItem('token');
+
+  const [workType, setWorkType] = useState(workTypes[0]);
   const [checkInHour, setCheckInHour] = useState('');
   const [checkInMinute, setCheckInMinute] = useState('');
   const [checkInMeridiem, setCheckInMeridiem] = useState('AM');
-
-  // Check-out states
   const [checkOutHour, setCheckOutHour] = useState('');
   const [checkOutMinute, setCheckOutMinute] = useState('');
   const [checkOutMeridiem, setCheckOutMeridiem] = useState('AM');
-
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState('');
   const [attendance, setAttendance] = useState([]);
+  const [filterType, setFilterType] = useState('All');
 
-  // Load previous attendance from localStorage
+  const API_BASE = 'http://localhost:8081/api/attendance';
+
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('attendance') || '[]');
-    setAttendance(stored);
+    if (!token) {
+      message.error('Unauthorized. Please login.');
+      return;
+    }
+
+    if (!employeeId || isNaN(employeeId)) {
+      message.error('Invalid employee ID. Please re-login.');
+      return;
+    }
+
+    fetchAttendance();
   }, []);
+
+  const fetchAttendance = async () => {
+    try {
+      const response = await axios.get(API_BASE, {
+        params: { employeeId },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setAttendance(response.data);
+    } catch (error) {
+      console.error('Failed to fetch attendance:', error);
+      message.error('Unable to fetch attendance data from server.');
+
+      const fallback = JSON.parse(localStorage.getItem('attendance') || '[]');
+      setAttendance(fallback.filter(entry => entry.employeeId === employeeId));
+    }
+  };
 
   const handleCheckIn = () => {
     if (!checkInHour || !checkInMinute) {
@@ -46,7 +79,7 @@ const Attendance = () => {
     message.success('Checked In! Please check out when you are done.');
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = async () => {
     if (!checkOutHour || !checkOutMinute) {
       message.warning('Please enter Check-Out time.');
       return;
@@ -56,20 +89,29 @@ const Attendance = () => {
     const totalHours = calculateTotalHours(checkInTime, checkOutTime);
 
     const newEntry = {
-      key: Date.now(),
-      name: "Shajeed Muskin",
-      date: new Date().toLocaleDateString(),
-      checkIn: checkInTime,
-      checkOut: checkOutTime,
-      type: workType,
+      employeeId,
+      employeeName,
+      date: new Date().toISOString().split('T')[0],
+      checkInTime,
+      checkOutTime,
+      workType,
       totalHours
     };
 
-    const updated = [...attendance, newEntry];
-    setAttendance(updated);
-    localStorage.setItem('attendance', JSON.stringify(updated));
-    message.success('Attendance recorded!');
-    resetFields();
+    try {
+          console.log("Token being sent:", token);
+      await axios.post(API_BASE, newEntry, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      message.success('Attendance recorded!');
+      fetchAttendance();
+      resetFields();
+    } catch (error) {
+      console.error(error);
+      message.error('Failed to record attendance. Please try again.');
+    }
   };
 
   const convertTo24HourFormat = (hour, minute, meridiem) => {
@@ -84,10 +126,8 @@ const Attendance = () => {
     const [eh, em] = end.split(':').map(Number);
     const startDate = new Date(0, 0, 0, sh, sm);
     const endDate = new Date(0, 0, 0, eh, em);
-
     let diff = (endDate - startDate) / 1000 / 60 / 60;
     if (diff < 0) diff += 24;
-
     return parseFloat(diff.toFixed(2));
   };
 
@@ -115,17 +155,13 @@ const Attendance = () => {
     setCheckInMeridiem(meridiem);
   };
 
-  const columns = [
-    { title: 'Date', dataIndex: 'date', key: 'date' },
-    { title: 'Check In', dataIndex: 'checkIn', key: 'checkIn' },
-    { title: 'Check Out', dataIndex: 'checkOut', key: 'checkOut' },
-    { title: 'Work Type', dataIndex: 'type', key: 'type' },
-    { title: 'Total Hours', dataIndex: 'totalHours', key: 'totalHours' },
-  ];
+  const filteredAttendance = filterType === 'All'
+    ? attendance
+    : attendance.filter(entry => entry.workType === filterType);
 
   return (
     <Card
-      title="Attendance"
+      title={`Attendance - ${employeeName}`}
       style={{
         maxWidth: 1000,
         margin: '2rem auto',
@@ -134,7 +170,7 @@ const Attendance = () => {
         borderRadius: '1rem'
       }}
     >
-      {/* Manual Check-In UI */}
+      {/* Check-In UI */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '2rem' }}>
         <div>
           <h3 style={{ marginBottom: 12 }}>Check-In</h3>
@@ -147,101 +183,86 @@ const Attendance = () => {
             </Select>
 
             <label style={{ fontWeight: 'bold' }}>Enter Time:</label>
-            <Input
-              type="number"
-              placeholder="hh"
-              value={checkInHour}
-              onChange={(e) => setCheckInHour(e.target.value)}
-              style={{ width: 60 }}
-              min={1}
-              max={12}
-            />
+            <Input type="number" placeholder="hh" value={checkInHour} onChange={e => setCheckInHour(e.target.value)} style={{ width: 60 }} />
             <span>:</span>
-            <Input
-              type="number"
-              placeholder="mm"
-              value={checkInMinute}
-              onChange={(e) => setCheckInMinute(e.target.value)}
-              style={{ width: 60 }}
-              min={0}
-              max={59}
-            />
+            <Input type="number" placeholder="mm" value={checkInMinute} onChange={e => setCheckInMinute(e.target.value)} style={{ width: 60 }} />
             <Select value={checkInMeridiem} onChange={setCheckInMeridiem} style={{ width: 80 }}>
               <Option value="AM">AM</Option>
               <Option value="PM">PM</Option>
             </Select>
 
             <Button onClick={fillCurrentCheckInTime}>Now</Button>
-
-            <Button
-              type="primary"
-              onClick={handleCheckIn}
-              style={{ backgroundColor: '#2e3b55', borderRadius: '0.4rem', padding: '0 2rem' }}
-            >
-              Check-In
-            </Button>
+            <Button type="primary" onClick={handleCheckIn}>Check-In</Button>
           </div>
         </div>
 
+        {/* Check-Out UI */}
         {isCheckedIn && (
           <div>
             <h3 style={{ marginBottom: 12 }}>Check-Out</h3>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <label style={{ fontWeight: 'bold' }}>Enter Time:</label>
-              <Input
-                type="number"
-                placeholder="hh"
-                value={checkOutHour}
-                onChange={(e) => setCheckOutHour(e.target.value)}
-                style={{ width: 60 }}
-                min={1}
-                max={12}
-              />
+              <Input type="number" placeholder="hh" value={checkOutHour} onChange={e => setCheckOutHour(e.target.value)} style={{ width: 60 }} />
               <span>:</span>
-              <Input
-                type="number"
-                placeholder="mm"
-                value={checkOutMinute}
-                onChange={(e) => setCheckOutMinute(e.target.value)}
-                style={{ width: 60 }}
-                min={0}
-                max={59}
-              />
+              <Input type="number" placeholder="mm" value={checkOutMinute} onChange={e => setCheckOutMinute(e.target.value)} style={{ width: 60 }} />
               <Select value={checkOutMeridiem} onChange={setCheckOutMeridiem} style={{ width: 80 }}>
                 <Option value="AM">AM</Option>
                 <Option value="PM">PM</Option>
               </Select>
 
-              <Button
-                type="primary"
-                onClick={handleCheckOut}
-                style={{ backgroundColor: '#2e3b55', borderRadius: '0.4rem', padding: '0 2rem' }}
-              >
-                Check-Out
-              </Button>
+              <Button type="primary" onClick={handleCheckOut}>Check-Out</Button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Attendance History Table */}
-      <Tabs defaultActiveKey="All" tabBarStyle={{ textAlign: 'center', fontWeight: 'bold' }}>
-        <TabPane tab="All" key="All">
-          <Table columns={columns} dataSource={attendance} pagination={false} rowKey="key" bordered size="middle" />
-        </TabPane>
-        {workTypes.map((type) => (
-          <TabPane tab={type} key={type}>
-            <Table
-              columns={columns}
-              dataSource={attendance.filter(entry => entry.type === type)}
-              pagination={false}
-              rowKey="key"
-              bordered
-              size="middle"
-            />
-          </TabPane>
-        ))}
-      </Tabs>
+      {/* Filter and Display */}
+      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <label style={{ fontWeight: 'bold' }}>Filter by Work Type:</label>
+        <Select value={filterType} onChange={setFilterType} style={{ width: 200 }}>
+          <Option value="All">All</Option>
+          {workTypes.map(type => (
+            <Option key={type} value={type}>{type}</Option>
+          ))}
+        </Select>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1rem',
+          marginTop: '1rem'
+        }}
+      >
+        {filteredAttendance.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#999' }}>
+            No attendance records for selected work type.
+          </div>
+        ) : (
+          filteredAttendance.map(entry => (
+            <div
+              key={entry.id || entry.key}
+              style={{
+                background: '#f9f9f9',
+                borderRadius: '1rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                padding: '1rem',
+                minHeight: '150px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
+              <h4 style={{ marginBottom: 8 }}>{entry.date}</h4>
+              <p><strong>Check-In:</strong> {entry.checkInTime}</p>
+              <p><strong>Check-Out:</strong> {entry.checkOutTime}</p>
+              <p><strong>Work Type:</strong> {entry.workType}</p>
+              <p><strong>Total Hours:</strong> {entry.totalHours}</p>
+            </div>
+          ))
+        )}
+      </div>
     </Card>
   );
 };

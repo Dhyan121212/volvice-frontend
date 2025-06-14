@@ -1,41 +1,69 @@
-import React from 'react';
-
-export const holidays = [
-  { date: '2025-01-01', name: 'New Year\'s Day' },
-  { date: '2025-01-26', name: 'Republic Day' },
-  { date: '2025-02-14', name: 'Valentine\'s Day' },
-  { date: '2025-03-17', name: 'Holi' },
-  { date: '2025-04-14', name: 'Ambedkar Jayanti' },
-  { date: '2025-05-01', name: 'Labour Day' },
-  { date: '2025-08-15', name: 'Independence Day' },
-  { date: '2025-10-02', name: 'Gandhi Jayanti' },
-  { date: '2025-10-23', name: 'Diwali' },
-  { date: '2025-12-25', name: 'Christmas' },
-];
+import React, { useEffect, useState, useContext } from 'react';
+import { message, Table, Tag } from 'antd';
+import dayjs from 'dayjs';
+import { AuthContext } from '../signIns/AuthContext'; // adjust path as needed
 
 const Holidays = () => {
+  const [holidays, setHolidays] = useState([]);
+  const { token } = useContext(AuthContext); // Use token from context
+
+  useEffect(() => {
+  console.log('Token being used:', token); // Debug token
+
+  if (!token || token === 'undefined') {
+    message.error('You are not logged in. Please login.');
+    return;
+  }
+    fetch('http://localhost:8081/api/v1/holiday', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Unauthorized');
+        }
+        return res.json();
+      })
+      .then(setHolidays)
+      .catch((err) => {
+        console.error('Fetch error:', err);
+        message.error('Failed to fetch holidays. Please check your login.');
+      });
+  }, [token]);
+
+  const columns = [
+    {
+      title: 'Holiday Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      render: (text) => dayjs(text).format('DD-MM-YYYY'),
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type) => <Tag color="blue">{type}</Tag>,
+    },
+  ];
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Holiday List - 2025</h1>
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <thead className="bg-blue-700 text-white">
-          <tr>
-            <th className="text-left px-6 py-3">Date</th>
-            <th className="text-left px-6 py-3">Holiday Name</th>
-          </tr>
-        </thead>
-        <tbody>
-          {holidays.map((holiday, index) => (
-            <tr key={index} className="border-b hover:bg-gray-100">
-              <td className="px-6 py-3">{holiday.date}</td>
-              <td className="px-6 py-3">{holiday.name}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ padding: '2rem' }}>
+      <h2>Holiday List</h2>
+      <Table
+        dataSource={holidays}
+        columns={columns}
+        rowKey={(record) => record.id}
+        bordered
+        pagination={{ pageSize: 5 }}
+      />
     </div>
   );
 };
 
 export default Holidays;
-

@@ -1,5 +1,5 @@
 import { Home, Calendar, User, LogIn, HelpCircle, Apple } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 const SidebarItem = ({ icon: Icon, label, to }) => (
   <Link
@@ -12,19 +12,18 @@ const SidebarItem = ({ icon: Icon, label, to }) => (
 );
 
 export default function Sidebar() {
+  const { employeeId } = useParams(); // Grab employeeId from URL
+
   return (
     <div className="w-40 h-screen bg-cyan-700 text-white flex flex-col">
-      {/* This pushes items to bottom */}
       <div className="flex-grow" />
-
-      {/* Sidebar items positioned toward the bottom */}
       <div className="flex flex-col items-center space-y-4 mb-10">
-        <SidebarItem icon={Home} label="Home" to="/Home" />
-        <SidebarItem icon={Calendar} label="Time Sheet" to="/Timesheet" />
-        <SidebarItem icon={User} label="Leaves" to="/leaves" />
-        <SidebarItem icon={Apple} label="Holidays" to="/holidays" />
-        <SidebarItem icon={LogIn} label="Attendance" to="/Attendence" />
-        <SidebarItem icon={HelpCircle} label="Payroll" disabled />
+        <SidebarItem icon={Home} label="Home" to={`/employee/${employeeId}/home`} />
+        <SidebarItem icon={Calendar} label="Time Sheet" to={`/employee/${employeeId}/timesheet`} />
+        <SidebarItem icon={User} label="Leaves" to={`/employee/${employeeId}/leaves`} />
+        <SidebarItem icon={Apple} label="Holidays" to={`/employee/${employeeId}/holidays`} />
+        <SidebarItem icon={LogIn} label="Attendance" to={`/employee/${employeeId}/attendence`} />
+        <SidebarItem icon={HelpCircle} label="Payroll" to="#" />
       </div>
     </div>
   );

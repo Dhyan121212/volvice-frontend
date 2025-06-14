@@ -1,56 +1,75 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, message, Card } from 'antd';
-import './Signin.css';
+import { Form, Input, Button, Card, message } from 'antd';
 
-const Signin = ({ onLogin }) => {
+const Signin = () => {
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  const onFinish = async ({ empId, password }) => {
     setLoading(true);
 
-    if (username === 'admin' && password === 'admin123') {
-      message.success('Pranaam Maalik!');
-      onLogin('admin');
-      navigate('/');
-    } else if ((username === 'dheeraj' && password === '123') || (username === 'shaz' && password === '143')) {
-      message.success('KAAM KAR BADWE!!');
-      onLogin('employee');
-      navigate('/');
-    } else {
-      message.error('Invalid credentials');
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: empId, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.token || !data.username) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Save token and username
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username);
+
+      message.success('Login successful!');
+      navigate(`/user/${data.username}/home`);
+    } catch (error) {
+      console.error('Login error:', error);
+      message.error('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleLogin();
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Card title="Sign In" style={{ width: 300 }}>
-        <Input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={handleKeyDown}
-          style={{ marginBottom: 16 }}
-        />
-        <Input.Password
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={handleKeyDown}
-          style={{ marginBottom: 16 }}
-        />
-        <Button type="primary" block onClick={handleLogin} loading={loading}>
-          Sign In
-        </Button>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#f0f2f5',
+      }}
+    >
+      <Card title="User Login" style={{ width: 350 }}>
+        <Form layout="vertical" onFinish={onFinish}>
+          <Form.Item
+            label="Username"
+            name="empId"
+            rules={[{ required: true, message: 'Please enter your username' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: 'Please enter your password' }]}
+          >
+            <Input.Password />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block loading={loading}>
+              Sign In
+            </Button>
+          </Form.Item>
+        </Form>
       </Card>
     </div>
   );
