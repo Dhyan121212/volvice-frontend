@@ -4,11 +4,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../Layouts/Layout';
 
 import Dashboard from '../pages/Dashboard';
-import Leaves from '../pages/Leaves';
-import Holidays from '../pages/Holidays';
-import TimeSheet from '../pages/TimeSheet';
-import AttendanceTab from '../pages/AttendenceTab';
-import Attendancepage from '../pages/Attendencepage';
+import Leaves from '../pages/Leaves/Leaves';
+import Holidays from '../pages/Holidays/Holidays';
+import TimeSheet from '../pages/TimeSheet/TimeSheet';
+import AttendanceTab from '../pages/Attendance/AttendenceTab';
+import Attendancepage from '../pages/Attendance/Attendencepage';
 
 const EmployeeRoutes = ({ onLogout, empId }) => {
   if (!empId) {

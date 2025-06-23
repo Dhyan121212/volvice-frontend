@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { Card, Select, Input, Button, message } from 'antd';
+import { Card, Select, Input, Button, message, Table, Tag } from 'antd';
+import './Attendance.css';
 
 const { Option } = Select;
 
@@ -14,10 +15,8 @@ const workTypes = [
 ];
 
 const Attendance = () => {
-  
   const { empId } = useParams();
   const storedEmployee = JSON.parse(localStorage.getItem("employee"));
-
   const employeeId = empId ? parseInt(empId, 10) : storedEmployee?.empId;
   const employeeName = storedEmployee?.name || localStorage.getItem('empName') || 'Employee';
   const token = localStorage.getItem('token');
@@ -54,15 +53,11 @@ const Attendance = () => {
     try {
       const response = await axios.get(API_BASE, {
         params: { employeeId },
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setAttendance(response.data);
     } catch (error) {
       console.error('Failed to fetch attendance:', error);
-      message.error('Unable to fetch attendance data from server.');
-
       const fallback = JSON.parse(localStorage.getItem('attendance') || '[]');
       setAttendance(fallback.filter(entry => entry.employeeId === employeeId));
     }
@@ -99,18 +94,15 @@ const Attendance = () => {
     };
 
     try {
-          console.log("Token being sent:", token);
       await axios.post(API_BASE, newEntry, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
       message.success('Attendance recorded!');
       fetchAttendance();
       resetFields();
     } catch (error) {
       console.error(error);
-      message.error('Failed to record attendance. Please try again.');
+      message.error('Failed to record attendance.');
     }
   };
 
@@ -143,127 +135,115 @@ const Attendance = () => {
     setWorkType(workTypes[0]);
   };
 
-  const fillCurrentCheckInTime = () => {
-    const now = new Date();
-    let hours = now.getHours();
-    const minutes = now.getMinutes();
-    const meridiem = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-
-    setCheckInHour(String(hours).padStart(2, '0'));
-    setCheckInMinute(String(minutes).padStart(2, '0'));
-    setCheckInMeridiem(meridiem);
-  };
-
   const filteredAttendance = filterType === 'All'
     ? attendance
     : attendance.filter(entry => entry.workType === filterType);
 
+  const columns = [
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+    },
+    {
+      title: 'Check-In',
+      dataIndex: 'checkInTime',
+      key: 'checkInTime',
+    },
+    {
+      title: 'Check-Out',
+      dataIndex: 'checkOutTime',
+      key: 'checkOutTime',
+    },
+    {
+      title: 'Work Type',
+      dataIndex: 'workType',
+      key: 'workType',
+      render: (type) => <Tag color="geekblue">{type}</Tag>,
+    },
+    {
+      title: 'Total Hours',
+      dataIndex: 'totalHours',
+      key: 'totalHours',
+    }
+  ];
+
   return (
-    <Card
-      title={`Attendance - ${employeeName}`}
-      style={{
-        maxWidth: 1000,
-        margin: '2rem auto',
-        padding: '2rem',
-        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
-        borderRadius: '1rem'
-      }}
-    >
-      {/* Check-In UI */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '2rem' }}>
-        <div>
-          <h3 style={{ marginBottom: 12 }}>Check-In</h3>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ fontWeight: 'bold' }}>Work type:</label>
-            <Select value={workType} onChange={setWorkType} style={{ width: 180 }}>
-              {workTypes.map((type) => (
+    <>
+      <Card
+        title={`Attendance - ${employeeName}`}
+        style={{
+          maxWidth: 1000,
+          margin: '2rem auto',
+          padding: '2rem',
+          borderRadius: '1rem',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}
+      >
+        <div style={{ textAlign: 'right', marginBottom: '1rem' }}>
+          <Button onClick={() => document.body.classList.toggle('dark-mode')}>Toggle Dark Mode</Button>
+        </div>
+
+        <div className="check-section modern-checkin">
+          <h3>Check-In</h3>
+          <div className="checkin-row">
+            <label>Work type:</label>
+            <Select value={workType} onChange={setWorkType} style={{ width: 180 }} size="small">
+              {workTypes.map(type => (
                 <Option key={type} value={type}>{type}</Option>
               ))}
             </Select>
 
-            <label style={{ fontWeight: 'bold' }}>Enter Time:</label>
-            <Input type="number" placeholder="hh" value={checkInHour} onChange={e => setCheckInHour(e.target.value)} style={{ width: 60 }} />
+            <label>Enter Time:</label>
+            <Input placeholder="hh" value={checkInHour} onChange={e => setCheckInHour(e.target.value)} style={{ width: 60 }} size="small" />
             <span>:</span>
-            <Input type="number" placeholder="mm" value={checkInMinute} onChange={e => setCheckInMinute(e.target.value)} style={{ width: 60 }} />
-            <Select value={checkInMeridiem} onChange={setCheckInMeridiem} style={{ width: 80 }}>
+            <Input placeholder="mm" value={checkInMinute} onChange={e => setCheckInMinute(e.target.value)} style={{ width: 60 }} size="small" />
+            <Select value={checkInMeridiem} onChange={setCheckInMeridiem} style={{ width: 70 }} size="small">
               <Option value="AM">AM</Option>
               <Option value="PM">PM</Option>
             </Select>
 
-            <Button onClick={fillCurrentCheckInTime}>Now</Button>
-            <Button type="primary" onClick={handleCheckIn}>Check-In</Button>
+            <Button type="primary" size="small" onClick={handleCheckIn} className="checkin-btn">Check-In</Button>
           </div>
         </div>
 
-        {/* Check-Out UI */}
         {isCheckedIn && (
-          <div>
-            <h3 style={{ marginBottom: 12 }}>Check-Out</h3>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <label style={{ fontWeight: 'bold' }}>Enter Time:</label>
-              <Input type="number" placeholder="hh" value={checkOutHour} onChange={e => setCheckOutHour(e.target.value)} style={{ width: 60 }} />
+          <div className="check-section modern-checkin">
+            <h3>Check-Out</h3>
+            <div className="checkin-row">
+              <label>Enter Time:</label>
+              <Input placeholder="hh" value={checkOutHour} onChange={e => setCheckOutHour(e.target.value)} style={{ width: 60 }} size="small" />
               <span>:</span>
-              <Input type="number" placeholder="mm" value={checkOutMinute} onChange={e => setCheckOutMinute(e.target.value)} style={{ width: 60 }} />
-              <Select value={checkOutMeridiem} onChange={setCheckOutMeridiem} style={{ width: 80 }}>
+              <Input placeholder="mm" value={checkOutMinute} onChange={e => setCheckOutMinute(e.target.value)} style={{ width: 60 }} size="small" />
+              <Select value={checkOutMeridiem} onChange={setCheckOutMeridiem} style={{ width: 70 }} size="small">
                 <Option value="AM">AM</Option>
                 <Option value="PM">PM</Option>
               </Select>
 
-              <Button type="primary" onClick={handleCheckOut}>Check-Out</Button>
+              <Button type="primary" size="small" onClick={handleCheckOut} className="checkin-btn">Check-Out</Button>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Filter and Display */}
-      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <label style={{ fontWeight: 'bold' }}>Filter by Work Type:</label>
-        <Select value={filterType} onChange={setFilterType} style={{ width: 200 }}>
-          <Option value="All">All</Option>
-          {workTypes.map(type => (
-            <Option key={type} value={type}>{type}</Option>
-          ))}
-        </Select>
-      </div>
+        <div style={{ marginTop: '2rem' }}>
+          <label><strong>Filter by Work Type:</strong></label>
+          <Select value={filterType} onChange={setFilterType} style={{ width: 200, marginLeft: 8 }}>
+            <Option value="All">All</Option>
+            {workTypes.map(type => (
+              <Option key={type} value={type}>{type}</Option>
+            ))}
+          </Select>
+        </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem',
-          marginTop: '1rem'
-        }}
-      >
-        {filteredAttendance.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#999' }}>
-            No attendance records for selected work type.
-          </div>
-        ) : (
-          filteredAttendance.map(entry => (
-            <div
-              key={entry.id || entry.key}
-              style={{
-                background: '#f9f9f9',
-                borderRadius: '1rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                padding: '1rem',
-                minHeight: '150px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-              }}
-            >
-              <h4 style={{ marginBottom: 8 }}>{entry.date}</h4>
-              <p><strong>Check-In:</strong> {entry.checkInTime}</p>
-              <p><strong>Check-Out:</strong> {entry.checkOutTime}</p>
-              <p><strong>Work Type:</strong> {entry.workType}</p>
-              <p><strong>Total Hours:</strong> {entry.totalHours}</p>
-            </div>
-          ))
-        )}
-      </div>
-    </Card>
+        <Table
+          style={{ marginTop: '2rem' }}
+          columns={columns}
+          dataSource={filteredAttendance.map((entry, index) => ({ ...entry, key: index }))}
+          pagination={{ pageSize: 5 }}
+          bordered
+        />
+      </Card>
+    </>
   );
 };
 

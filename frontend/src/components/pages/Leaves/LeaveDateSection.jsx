@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import { Form, DatePicker, message } from 'antd';
 import dayjs from 'dayjs';
 
-const MAX_DURATION = 10; // days
+const MAX_DURATION = 10;
 
-const LeaveDateSection = ({ form }) => {
+const LeaveDateSection = ({ form, holidays }) => {
   const [duration, setDuration] = useState(0);
+
+  const isWeekendOrHoliday = (date) => {
+    const isWeekend = [0, 6].includes(date.day()); // Sunday or Saturday
+    const isHoliday = holidays.some(h => dayjs(h.date).isSame(date, 'day'));
+    return isWeekend || isHoliday;
+  };
 
   const handleStartDateChange = (start) => {
     if (start) {
       const autoEnd = dayjs(start).add(1, 'day');
       form.setFieldsValue({ endDate: autoEnd });
-      setDuration(2); // Start + 1 day
+      setDuration(2);
     } else {
       form.setFieldsValue({ endDate: null });
       setDuration(0);
@@ -47,6 +53,7 @@ const LeaveDateSection = ({ form }) => {
           <DatePicker
             style={{ width: '100%' }}
             placeholder="Start Date"
+            disabledDate={isWeekendOrHoliday}
             onChange={handleStartDateChange}
           />
         </Form.Item>
@@ -59,6 +66,7 @@ const LeaveDateSection = ({ form }) => {
           <DatePicker
             style={{ width: '100%' }}
             placeholder="End Date"
+            disabledDate={isWeekendOrHoliday}
             onChange={handleEndDateChange}
           />
         </Form.Item>
@@ -74,4 +82,3 @@ const LeaveDateSection = ({ form }) => {
 };
 
 export default LeaveDateSection;
-

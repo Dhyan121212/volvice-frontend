@@ -7,7 +7,7 @@ const TopBar = () => {
 
   const handleLogout = () => {
     // Clear token or any session-related data (optional)
-    localStorage.removeItem('token');
+    localStorage.removeItem('token');   
     navigate('/login');
   };
 

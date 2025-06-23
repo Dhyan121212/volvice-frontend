@@ -5,11 +5,11 @@ import AdminSidebar from '../Layouts/AdminSidebar';
 import AdminTopBar from './AdminTopbar';
 
 import Dashboard from '../pages/Dashboard';
-import Leaves from '../pages/Leaves';
-import Holidays from '../pages/Holidays';
-import TimeSheet from '../pages/TimeSheet';
-import AttendanceTab from '../pages/AttendenceTab';
-import Attendancepage from '../pages/Attendencepage';
+import Leaves from '../pages/Leaves/Leaves';
+import Holidays from '../pages/Holidays/Holidays';
+import TimeSheet from '../pages/TimeSheet/TimeSheet';
+import AttendanceTab from '../pages/Attendance/AttendenceTab';
+import Attendancepage from '../pages/Attendance/Attendencepage';
 
 import EmployeeDetails from './EmployeeDetails';
 import TeamAttendance from './TeamAttendence';

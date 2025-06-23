@@ -1,0 +1,41 @@
+.styled-timesheet {
+  padding: 2rem;
+  background: #f7f7f7;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.employee-card {
+  background: #ffdddd;
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.week-picker {
+  margin: 10px 0 20px;
+}
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.styled-table th,
+.styled-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+
+.styled-table th {
+  background: #f0f0f0;
+  font-weight: bold;
+}

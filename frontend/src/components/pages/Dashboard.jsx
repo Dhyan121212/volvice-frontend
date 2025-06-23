@@ -1,6 +1,6 @@
 // src/components/pages/Dashboard.jsx
 import React from 'react';
-import AttendanceTab from './AttendenceTab'; // Adjust the path if needed
+import AttendanceTab from './Attendance/AttendenceTab'; // Adjust the path if needed
 
 const Dashboard = () => {
   return (
