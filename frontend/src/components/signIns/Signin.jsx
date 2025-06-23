@@ -41,7 +41,6 @@ const Signin = ({ onLogin }) => {
       document.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
-  // ✅ NOW it's closed correctly!
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +54,7 @@ const Signin = ({ onLogin }) => {
 
       const data = await res.json();
 
-       console.log("🔐 JWT Token:", data.token);
+       console.log("JWT Token:", data.token);
 
        
       if (!res.ok || !data.token || !data.employee) throw new Error('Invalid credentials');
