@@ -1,46 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+
 import Signin from './components/signIns/Signin';
 import AdminRoutes from './components/Admin/AdminRoutes';
 import EmployeeRoutes from './components/Employee/EmployeeRoutes';
 
+import { loginSuccess, logout } from './Redux/Slices/AuthSlice';
 
 const App = () => {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [role, setRole] = useState('');
-  const [empId, setEmpId] = useState('');
+  const dispatch = useDispatch();
 
+  const { isAuthenticated, token, employee } = useSelector(state => state.auth);
+  const role = employee?.role?.toLowerCase();
+  const empId = employee?.empId || employee?.id; // use whatever you're storing
+
+  // Auto login if token/employee exists in localStorage
   useEffect(() => {
-    // Load login state from localStorage
     const storedToken = localStorage.getItem('token');
     const storedEmployee = JSON.parse(localStorage.getItem('employee'));
 
     if (storedToken && storedEmployee) {
-      setLoggedIn(true);
-      setRole(storedEmployee.role?.toLowerCase());
-      setEmpId(storedEmployee.id);
+      dispatch(loginSuccess({ token: storedToken, employee: storedEmployee }));
     }
-  }, []);
-
-  const handleLogin = (userRole, employeeId) => {
-    setLoggedIn(true);
-    setRole(userRole);
-    setEmpId(employeeId);
-  };
+  }, [dispatch]);
 
   const handleLogout = () => {
-    setLoggedIn(false);
-    setRole('');
-    setEmpId('');
-    localStorage.removeItem('token');
-    localStorage.removeItem('employee');
+    dispatch(logout());
+    localStorage.clear();
   };
 
   return (
     <Routes>
-      <Route path="/login" element={<Signin onLogin={handleLogin} />} />
+      <Route path="/login" element={<Signin />} />
 
-      {loggedIn ? (
+      {isAuthenticated ? (
         <>
           <Route
             path="/"

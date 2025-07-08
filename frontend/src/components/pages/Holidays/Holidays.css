@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@500&display=swap");
+/* @import url("https://fonts.googleapis.com/css2?family=Oswald:wght@500&display=swap");
 
 body {
   font-family: "Oswald", sans-serif;
@@ -118,4 +118,107 @@ h1 {
 .ol-days > li:nth-child(6n + 6) {
   --clr_bg: #fc6868;
   --clr_accent: #2e2b3c;
+} */
+
+
+
+body {
+  font-family: 'Lato', sans-serif;
+  background-color: #f4f6f8;
+  margin: 0;
+  padding: 0;
 }
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+h2 {
+  font-size: 26px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+h2 small {
+  font-size: 0.5em;
+}
+
+/* Base row styles */
+.responsive-table li {
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.4s ease;
+}
+
+.responsive-table li:hover {
+  transform: scale(1.01);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Header */
+.responsive-table .table-header {
+  background-color: #020e27;
+  color: #fff;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: bold;
+}
+
+/* Columns */
+.responsive-table .col-1 {
+  flex-basis: 10%;
+  text-align: center;
+}
+
+.responsive-table .col-2 {
+  flex-basis: 30%; /* Reduced from 40% */
+  padding: 0 8px;
+}
+
+.responsive-table .col-3 {
+  flex-basis: 30%; /* Increased from 25% */
+  padding: 0 8px;
+}
+
+.responsive-table .col-4 {
+  flex-basis: 30%;
+  padding: 0 8px;
+}
+
+/* Responsive for Mobile */
+@media all and (max-width: 767px) {
+  .responsive-table .table-header {
+    display: none;
+  }
+
+  .responsive-table li {
+    display: block;
+    padding: 15px;
+  }
+
+  .responsive-table [class^='col-'] {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  .responsive-table [class^='col-']::before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: #6C7A89;
+    flex-basis: 50%;
+    text-align: left;
+  }
+}
+

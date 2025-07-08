@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import axios from 'axios';
 import StyledCalendar from './StyledCalender';
+import { fetchHolidays } from '../../../Redux/Slices/HolidaySlices';
+import { fetchLeaves } from '../../../Redux/Slices/LeavesSlice';
 import './CuustomCalender.css';
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
 const LeaveRequest = () => {
-  const [holidays, setHolidays] = useState([]);
-  const [leaves, setLeaves] = useState([]);
+  const dispatch = useDispatch();
+
+  const holidays = useSelector((state) => state.holidays.data || []);
+  const leaves = useSelector((state) => state.leaves.data || []);
   const [showAll, setShowAll] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState([]);
+
   const [formData, setFormData] = useState({
     leaveType: '',
     startDate: '',
@@ -33,22 +40,28 @@ const LeaveRequest = () => {
   const employeeId = employee?.id;
 
   useEffect(() => {
-    if (!token || !employeeId) return;
+    if (token && employeeId) {
+      dispatch(fetchHolidays());
+      dispatch(fetchLeaves());
+      fetchLeaveTypes();
+    }
+  }, [token,  dispatch]);
 
-    axios
-      .get('http://localhost:8081/api/v1/holiday', {
-        headers: { Authorization: 'Bearer ' + token },
-      })
-      .then((res) => setHolidays(res.data))
-      .catch(() => alert('Failed to fetch holidays'));
+  const fetchLeaveTypes = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/v1/leave/leave-request-template', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    axios
-      .get(`http://localhost:8081/api/v1/leave/employee/${employeeId}`, {
-        headers: { Authorization: 'Bearer ' + token },
-      })
-      .then((res) => setLeaves(res.data))
-      .catch(() => alert('Failed to fetch leaves'));
-  }, [employeeId]);
+    // Grab the leave types from the first section
+    const types = res.data?.sectionList?.[0]?.leaveTypes || [];
+    setLeaveTypes(types);
+  } catch (err) {
+    console.error('Failed to fetch leave types:', err);
+  }
+};
+
+
 
   const handleInputChange = (e) => {
     const { name, value, files, type } = e.target;
@@ -58,71 +71,74 @@ const LeaveRequest = () => {
     }));
   };
 
-  const handleApplyLeave = () => {
-    const payload = {
-      employeeId,
-      leaveType: formData.leaveType,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      reason: formData.reason,
-      dayType: formData.dayType,
-    };
-
-    const config = {
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-Type': 'multipart/form-data',
-      },
-    };
-
-    const form = new FormData();
-    Object.entries(payload).forEach(([key, value]) => form.append(key, value));
-    if (formData.file) form.append('document', formData.file);
-
-    axios
-      .post('http://localhost:8081/api/v1/leave', form, config)
-      .then(() => {
-        alert('Leave Applied Successfully');
-        window.location.reload();
-      })
-      .catch(() => alert('Failed to apply leave'));
+ const handleApplyLeave = () => {
+  const payload = {
+    employeeId,
+    leaveType: formData.leaveType,
+    startDate: formData.startDate,
+    endDate: formData.endDate,
+    reason: formData.reason,
+    dayType: formData.dayType,
   };
+
+  axios
+    .post('http://localhost:8080/api/v1/leave/apply-leave', payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(() => {
+      alert('Leave Applied Successfully');
+      dispatch(fetchLeaves(employeeId));
+    })
+    .catch((err) => {
+      console.error('❌ Apply leave failed:', err);
+      alert('Failed to apply leave');
+    });
+};
+
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-semibold text-center mb-6">Leave Request</h2>
 
-        {/* Calendar and Leave Form */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start">
-          {/* Calendar */}
-          <div className="w-full lg:w-1/2">
-            <StyledCalendar
-              year={dayjs().year()}
-              month={dayjs().month()}
-              holidays={holidays}
-              leaves={leaves}
-            />
-          </div>
+      <div className="flex flex-col lg:flex-row items-start">
+  {/* Calendar */}
+  <div className="w-full lg:w-1/2">
+    <StyledCalendar
+      year={dayjs().year()}
+      month={dayjs().month()}
+      holidays={holidays}
+      leaves={leaves}
+    />
+  </div>
 
-          {/* Leave Form */}
-          <div className="w-full lg:w-1/2 border-l border-gray-300 pl-6">
+          {/* Form */}
+          <div className="w-full lg:w-1/2">
             <div className="space-y-4">
+              {/* Leave Type Dropdown */}
               <div>
                 <label className="font-medium mr-2">Leave type :</label>
-                <select
-                  name="leaveType"
-                  value={formData.leaveType}
-                  onChange={handleInputChange}
-                  className="border p-2 rounded w-1/2"
-                >
-                  <option value="">Select Type</option>
-                  <option value="Sick Leave">Sick Leave</option>
-                  <option value="Casual Leave">Casual Leave</option>
-                  <option value="Optional Holiday">Optional Holiday</option>
-                </select>
+             <select
+  name="leaveType"
+  value={formData.leaveType}
+  onChange={handleInputChange}
+  className="border p-2 rounded w-1/2"
+>
+  <option value="">Select Type</option>
+  {leaveTypes.map((type) => (
+    <option key={type.code} value={type.code}>
+      {type.name}
+    </option>
+  ))}
+</select>
+
+
               </div>
 
+              {/* Date Range */}
               <div className="flex items-center space-x-3">
                 <label className="font-medium">Select Date :</label>
                 <input
@@ -139,9 +155,9 @@ const LeaveRequest = () => {
                   onChange={handleInputChange}
                   className="border p-2 rounded"
                 />
-                <span className="text-gray-600">--</span>
               </div>
 
+              {/* Reason */}
               <div>
                 <label className="font-medium">Reason :</label>
                 <textarea
@@ -154,6 +170,7 @@ const LeaveRequest = () => {
                 />
               </div>
 
+              {/* Day Type */}
               <div>
                 <label className="font-medium mr-4">Day :</label>
                 <label className="mr-4">
@@ -178,7 +195,8 @@ const LeaveRequest = () => {
                 </label>
               </div>
 
-              <div>
+              {/* Document Upload */}
+              {/* <div>
                 <label className="font-medium mr-2">Documents :</label>
                 <input
                   type="file"
@@ -186,8 +204,9 @@ const LeaveRequest = () => {
                   onChange={handleInputChange}
                   className="border p-1 rounded"
                 />
-              </div>
+              </div> */}
 
+              {/* Submit Button */}
               <div className="text-right">
                 <button
                   onClick={handleApplyLeave}
@@ -200,48 +219,7 @@ const LeaveRequest = () => {
           </div>
         </div>
 
-        {/* Leave History Table
-        <div className="mt-10">
-          <h3 className="text-lg font-semibold mb-4">Your Leave History</h3>
-          <table className="w-full table-auto border rounded">
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="p-2 border">Employee ID</th>
-                <th className="p-2 border">Leave Type</th>
-                <th className="p-2 border">Start Date</th>
-                <th className="p-2 border">End Date</th>
-                <th className="p-2 border">Reason</th>
-                <th className="p-2 border">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaves.map((leave, index) => (
-                <tr key={index} className="border">
-                  <td className="p-2 border">{leave.employeeId}</td>
-                  <td className="p-2 border">{leave.leaveType}</td>
-                  <td className="p-2 border">{dayjs(leave.startDate).format('DD-MM-YYYY')}</td>
-                  <td className="p-2 border">{dayjs(leave.endDate).format('DD-MM-YYYY')}</td>
-                  <td className="p-2 border">{leave.reason}</td>
-                  <td className="p-2 border">
-                    <span
-                      className={`px-2 py-1 rounded text-white text-sm ${
-                        leave.status === 'APPROVED'
-                          ? 'bg-green-500'
-                          : leave.status === 'REJECTED'
-                          ? 'bg-red-500'
-                          : 'bg-blue-500'
-                      }`}
-                    >
-                      {leave.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div> */}
-
-        {/* Leave Details Expandable Section */}
+        {/* Leave History */}
         <div className="mt-10">
           <div className="bg-white rounded-lg shadow-md p-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-700">Leave Details</h3>

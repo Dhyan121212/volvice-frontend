@@ -27,7 +27,7 @@ const TeamAttendance = () => {
             {attendanceData.map((entry, index) => (
               <tr key={entry.key || index} className="border-b border-gray-200 hover:bg-gray-50">
                 <td className="py-3 px-6">{entry.date}</td>
-                <td className="py-3 px-6">{entry.Name}</td>
+                <td className="py-3 px-6">{entry.name}</td>
                 <td className="py-3 px-6">{entry.checkIn}</td>
                 <td className="py-3 px-6">{entry.checkOut}</td>
                 <td className="py-3 px-6">{entry.type}</td>

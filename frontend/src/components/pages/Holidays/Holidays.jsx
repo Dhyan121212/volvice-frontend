@@ -1,53 +1,41 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { message } from 'antd';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchHolidays } from '../../../Redux/Slices/HolidaySlices'; // ✅ adjust path
 import dayjs from 'dayjs';
-import { AuthContext } from '../../signIns/AuthContext';
-import './Holidays.css'; // make sure this filename matches exactly
+import './Holidays.css';
 
 const Holidays = () => {
-  const [holidays, setHolidays] = useState([]);
-  const { token } = useContext(AuthContext);
+  const dispatch = useDispatch();
 
-  console.log("🔓 Holiday fetch token:", token);
-
+  // ✅ Correctly select from "holidays" slice
+  const { data: holidays = [], loading, error } = useSelector((state) => state.holidays || {});
 
   useEffect(() => {
-  // Wait until AuthContext finishes loading
-  if (token === null) return;
-
-  if (!token || token === 'undefined') {
-    message.error('You are not logged in. Please login.');
-    return;
-  }
-
-  console.log('🔓 Holiday fetch token:', token);
-
-  fetch('http://localhost:8081/api/v1/holiday', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error('Unauthorized');
-      return res.json();
-    })
-    .then(setHolidays)
-    .catch((err) => {
-      console.error('Fetch error:', err);
-      message.error('Failed to fetch holidays. Please check your login.');
-    });
-}, [token]);
-
+    dispatch(fetchHolidays());
+  }, [dispatch]);
 
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Holiday List</h1>
-      <ol className="ol-days">
+
+      {loading && <p>Loading holidays...</p>}
+      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+
+      <ol className="responsive-table">
+        <li className="table-header">
+          <div className="col-1">#</div>
+          <div className="col-2">Date</div>
+          <div className="col-3">Holiday Name</div>
+          <div className="col-4">Type</div>
+        </li>
         {holidays.map((holiday, index) => (
-          <li key={holiday.id} style={{ '--month': `'${dayjs(holiday.date).format('MMM')}'` }}>
-            <span style={{ gridColumn: 3 }}>
-              {holiday.name} — <strong>{holiday.type}</strong>
-            </span>
+          <li className="table-row" key={holiday.id}>
+            <div className="col-1" data-label="#"> {index + 1}</div>
+            <div className="col-2" data-label="Date">
+              {dayjs(holiday.date).format('YYYY-MM-DD')}
+            </div>
+            <div className="col-3" data-label="Holiday Name">{holiday.name}</div>
+            <div className="col-4" data-label="Type">{holiday.holidayType}</div>
           </li>
         ))}
       </ol>

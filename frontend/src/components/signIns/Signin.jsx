@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../Redux/Slices/AuthSlice';
 import './Signin.css';
 
-const Signin = ({ onLogin }) => {
-  const [empId, setEmpId] = useState('');
+const Signin = () => {
+  const [userName, setuserName] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   useEffect(() => {
+
+    
     const passwordInput = document.getElementById('password');
     const form = document.querySelector('form');
 
@@ -36,43 +42,45 @@ const Signin = ({ onLogin }) => {
     };
 
     document.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
+    return () => document.removeEventListener('mousemove', handleMouseMove);
   }, []);
-  // ✅ NOW it's closed correctly!
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+   
     try {
-      const res = await fetch('http://localhost:8081/api/auth/login', {
+      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empId, password }),
+        body: JSON.stringify( {userName: userName, password }),
       });
 
-      const data = await res.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
 
-       console.log("🔐 JWT Token:", data.token);
+      const data = await response.json();
 
-       
-      if (!res.ok || !data.token || !data.employee) throw new Error('Invalid credentials');
+      console.log("JWT Token:", data.token);
 
       localStorage.setItem('token', data.token);
-      localStorage.setItem('employee', JSON.stringify(data.employee));
+      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
 
-      const role = data.employee.role?.toLowerCase();
-      const id = data.employee.id;
-      onLogin(role, id);
 
-      if (role === 'admin') navigate(`/admin/${id}/home`);
-      else navigate(`/employee/${id}/home`);
+      navigate(`/employee/${data.user.id}/home`);
+
+
     } catch (err) {
-      const form = document.querySelector('form');
+    console.error('Login error:', err);
+
+    const form = document.querySelector('form');
+    if (form) {
       form.classList.add('wrong-entry');
       setTimeout(() => form.classList.remove('wrong-entry'), 3000);
+    }
     } finally {
       setLoading(false);
     }
@@ -83,18 +91,11 @@ const Signin = ({ onLogin }) => {
       <div className="panda">
         <div className="ear"></div>
         <div className="ear rgt"></div>
-
         <div className="face">
           <div className="eye-shade"></div>
           <div className="eye-shade rgt"></div>
-
-          <div className="eye-white">
-            <div className="eye-ball"></div>
-          </div>
-          <div className="eye-white rgt">
-            <div className="eye-ball"></div>
-          </div>
-
+          <div className="eye-white"><div className="eye-ball"></div></div>
+          <div className="eye-white rgt"><div className="eye-ball"></div></div>
           <div className="nose"></div>
           <div className="mouth"></div>
         </div>
@@ -105,10 +106,10 @@ const Signin = ({ onLogin }) => {
             <input
               required
               className="form-control"
-              value={empId}
-              onChange={(e) => setEmpId(e.target.value)}
+              value={userName}
+              onChange={(e) => setuserName(e.target.value)}
             />
-            <label className="form-label">Employee ID</label>
+            <label className="form-label">userName</label>
           </div>
           <div className="form-group">
             <input
@@ -128,9 +129,7 @@ const Signin = ({ onLogin }) => {
 
         <div className="hand left-hand"></div>
         <div className="hand right-hand"></div>
-
         <div className="body"></div>
-
         <div className="foot"><div className="finger"></div></div>
         <div className="foot rgt"><div className="finger"></div></div>
       </div>
