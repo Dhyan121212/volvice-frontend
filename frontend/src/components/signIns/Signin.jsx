@@ -61,7 +61,15 @@ const Signin = () => {
         throw new Error(errorData.message || 'Login failed');
       }
 
-      const data = await response.json();
+const data = await response.json();
+console.log("JWT Token:", data.token);
+
+localStorage.setItem('token', data.token);
+localStorage.setItem('refreshToken', data.refreshToken);
+localStorage.setItem('user', JSON.stringify(data.user));
+
+navigate(`/employee/${data.user.id}/home`);
+
 
       console.log("JWT Token:", data.token);
 
